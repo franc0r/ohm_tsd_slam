@@ -1,209 +1,51 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(ohm_tsd_slam)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+# uncomment the following section in order to fill in
+# further dependencies manually.
+find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+
+add_executable(slam
+  src/slam.cpp
+  # src/SlamNode.cpp
+  # src/ThreadLocalize.cpp
+  # src/ThreadSLAM.cpp
+  # src/ThreadMapping.cpp
+  # src/ThreadGrid.cpp
+  # src/OdometryAnalyzer.cpp
+)
+target_include_directories(slam PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(slam PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(slam
+  rclcpp
   geometry_msgs
-  nav_msgs
-  roscpp
-  sensor_msgs
-  tf
 )
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS} -fopenmp -O2 -mtune=native -Wall -std=c++17")
-
-
-## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS system)
-
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependencies might have been
-##     pulled in transitively but can be declared for certainty nonetheless:
-##     * add a build_depend tag for "message_generation"
-##     * add a run_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
+# target_link_libraries(slam
+#   PRIVATE rclcpp
+#   PUBLIC  geometry_msgs
 # )
 
-## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   StartStopSLAM.srv
-#   Service2.srv
-)
+install(TARGETS slam
+  DESTINATION lib/${PROJECT_NAME})
 
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   sensor_msgs
-)
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ohm_tsd_slam
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp sensor_msgs tf
-#  DEPENDS system_lib
-)
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-# include_directories(include)
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  ${PROJECT_SOURCE_DIR}/src
-  $ENV{OBVIOUSLY_ROOT}
-)
-
-link_directories(
-  $ENV{OBVIOUSLY_ROOT}/build/release/obcore
-  $ENV{OBVIOUSLY_ROOT}/build/release/obgraphic
-  $ENV{OBVIOUSLY_ROOT}/build/release/obvision
-)
-
-## Declare a cpp library
-# add_library(ohm_tsd_slam
-#   src/${PROJECT_NAME}/ohm_tsd_slam.cpp
-# )
-
-## Declare a cpp executable
-add_executable(slam_node src/slam_node.cpp
-                                 src/SlamNode.cpp
-                                 src/ThreadLocalize.cpp
-                                 src/ThreadSLAM.cpp
-                                 src/ThreadMapping.cpp
-                                 src/ThreadGrid.cpp
-                                 src/OdometryAnalyzer.cpp
-                                 )
-
-                                 add_executable(test_reg src/test.cpp
-                                                     src/registration/TsdPdfMatcher.cpp)
-                                  
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-
-## Specify libraries to link a library or executable target against
-# target_link_libraries(ohm_tsd_slam_node
-#   ${catkin_LIBRARIES}
-# )
-#SET(GRAPHICLIBS obgraphic vtkHybrid glut GL jpeg)
-target_link_libraries(slam_node
-                                 ${catkin_LIBRARIES}
-                                 obvision
-                                 obcore
- #                                ${GRAPHICLIBS}
-                                 gsl
-                                 gslcblas
-                                 ann
-                                 flann
-                                 ${Boost_LIBRARIES}
-                                 )
-
-target_link_libraries(test_reg
-                                 ${catkin_LIBRARIES}                                 obcore
- #                                ${GRAPHICLIBS}
-                                 gsl
-                                 gslcblas
-                                 ann
-                                 flann
-                                 ${Boost_LIBRARIES}
-                                 tinyxml2
-                                 )                                 
-
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables and/or libraries for installation
-install(TARGETS slam_node
-   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
- install(FILES
-    launch/slam.launch
-    launch/multi_slam.launch
-#   # myfile2
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
- )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ohm_tsd_slam.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+ament_package()
