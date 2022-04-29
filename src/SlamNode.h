@@ -12,7 +12,7 @@
 #include "ThreadLocalize.h"
 #include "ohm_tsd_slam/StartStopSLAM.h"
 
-#define INIT_PSHS 1      //number of initial pushes into the grid
+#define INIT_PSHS 1        //number of initial pushes into the grid
 #define THREAD_TERM_MS 1   //time in ms waiting for thread to terminate
 
 

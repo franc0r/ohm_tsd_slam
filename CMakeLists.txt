@@ -11,20 +11,31 @@ find_package(ament_cmake REQUIRED)
 # further dependencies manually.
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(Boost COMPONENTS thread REQUIRED)
 
 add_executable(slam
   src/slam.cpp
   # src/SlamNode.cpp
   # src/ThreadLocalize.cpp
-  # src/ThreadSLAM.cpp
+  src/ThreadSLAM.cpp
   # src/ThreadMapping.cpp
   # src/ThreadGrid.cpp
   # src/OdometryAnalyzer.cpp
 )
-target_include_directories(slam PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
+target_include_directories(slam
+  PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+          $<INSTALL_INTERFACE:include>
+  PRIVATE /usr/local/usr/include/obviously
+)
 target_compile_features(slam PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_directories(slam
+  PRIVATE /usr/local/usr/lib
+)
+target_link_libraries(slam
+  obcore
+  obvision
+  Boost::thread
+)
 ament_target_dependencies(slam
   rclcpp
   geometry_msgs

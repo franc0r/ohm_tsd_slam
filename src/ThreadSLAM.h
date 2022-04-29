@@ -5,9 +5,6 @@
 
 #include "obvision/reconstruct/grid/TsdGrid.h"
 
-#include <ros/ros.h>
-
-
 namespace ohm_tsd_slam
 {
 
