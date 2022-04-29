@@ -2,16 +2,19 @@ cmake_minimum_required(VERSION 3.8)
 project(ohm_tsd_slam)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -O2)
 endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
-find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
+find_package(OpenMP REQUIRED)
 
 add_executable(slam
   src/slam.cpp
@@ -19,7 +22,7 @@ add_executable(slam
   # src/ThreadLocalize.cpp
   src/ThreadSLAM.cpp
   # src/ThreadMapping.cpp
-  # src/ThreadGrid.cpp
+  src/ThreadGrid.cpp
   # src/OdometryAnalyzer.cpp
 )
 target_include_directories(slam
@@ -31,14 +34,22 @@ target_compile_features(slam PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++1
 target_link_directories(slam
   PRIVATE /usr/local/usr/lib
 )
-target_link_libraries(slam
-  obcore
-  obvision
-  Boost::thread
-)
 ament_target_dependencies(slam
   rclcpp
+  nav_msgs
   geometry_msgs
+  sensor_msgs
+)
+target_link_libraries(slam
+  obvision
+  obcore
+  gsl
+  gslcblas
+  lua5.1
+  ann
+  flann
+  Boost::thread
+  OpenMP::OpenMP_CXX
 )
 # target_link_libraries(slam
 #   PRIVATE rclcpp

@@ -25,3 +25,8 @@
 .project
 .settings
 /maps
+
+# VS Code
+.clangd
+.devcontainer
+.vscode
