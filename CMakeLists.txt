@@ -7,6 +7,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 find_package(rclcpp REQUIRED)
@@ -16,12 +17,16 @@ find_package(sensor_msgs REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
 find_package(OpenMP REQUIRED)
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/StartStopSLAM.srv"
+)
+
 add_executable(slam
   src/slam.cpp
   # src/SlamNode.cpp
   # src/ThreadLocalize.cpp
   src/ThreadSLAM.cpp
-  # src/ThreadMapping.cpp
+  src/ThreadMapping.cpp
   src/ThreadGrid.cpp
   # src/OdometryAnalyzer.cpp
 )
@@ -51,10 +56,7 @@ target_link_libraries(slam
   Boost::thread
   OpenMP::OpenMP_CXX
 )
-# target_link_libraries(slam
-#   PRIVATE rclcpp
-#   PUBLIC  geometry_msgs
-# )
+rosidl_target_interfaces(slam ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 install(TARGETS slam
   DESTINATION lib/${PROJECT_NAME})

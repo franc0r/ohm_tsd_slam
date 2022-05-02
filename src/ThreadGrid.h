@@ -1,5 +1,9 @@
-#ifndef THREADGRID_H_
-#define THREADGRID_H_
+/*
+ * ThreadGrid.h
+ *
+ * Refactored by: Christian Wendt
+ */
+#pragma once
 
 #include "ThreadSLAM.h"
 
@@ -121,5 +125,3 @@ private:
 };
 
 } /* namespace ohm_tsd_slam */
-
-#endif /* THREADGRID_H_ */

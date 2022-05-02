@@ -1,16 +1,29 @@
-#ifndef SLAMNODE_H_
-#define SLAMNODE_H_
+/*
+ * SlamNode.h
+ *
+ * Refactored by: Christian Wendt
+ */
+#pragma once
 
-#include <ros/ros.h>
+#include <functional>
+#include <rclcpp/duration.hpp>
+#include <rclcpp/node.hpp>
+#include <rclcpp/rate.hpp>
+#include <rclcpp/rclcpp.hpp>
+
+#include <rclcpp/service.hpp>
+#include <rclcpp/subscription.hpp>
+#include <sensor_msgs/msg/detail/laser_scan__struct.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 
 #include <vector>
 
-#include "obvision/reconstruct/grid/TsdGrid.h"
-#include "obvision/reconstruct/grid/SensorPolar2D.h"
-#include "obcore/base/Logger.h"
+#include <obvision/reconstruct/grid/TsdGrid.h>
+#include <obvision/reconstruct/grid/SensorPolar2D.h>
+#include <obcore/base/Logger.h>
 
 #include "ThreadLocalize.h"
-#include "ohm_tsd_slam/StartStopSLAM.h"
+#include "ohm_tsd_slam/srv/start_stop_slam.hpp"
 
 #define INIT_PSHS 1        //number of initial pushes into the grid
 #define THREAD_TERM_MS 1   //time in ms waiting for thread to terminate
@@ -27,37 +40,35 @@ class ThreadGrid;
 
 struct TaggedSubscriber
 {
-  TaggedSubscriber(std::string topic, ThreadLocalize& localizer, ros::NodeHandle& nh):
+  TaggedSubscriber(std::string topic, ThreadLocalize& localizer, const std::shared_ptr<rclcpp::Node>& node):
     _topic(topic),
     _localizer(&localizer),
-    _nh(&nh)
+    _node(node)
   {}
-  TaggedSubscriber(const TaggedSubscriber& subs):
-    _subs(subs._subs),
-    _topic(subs._topic),
-    _localizer(subs._localizer),
-    _nh(subs._nh)
-  {}
-  TaggedSubscriber(void):
-    _localizer(NULL),
-    _nh(NULL)
+  TaggedSubscriber():
+    _localizer(nullptr),
+    _node(nullptr)
   {}
   bool topic(const std::string topic)
   {
     return topic == _topic;
   }
-  void switchOff(void)
+  void switchOff()
   {
-    _subs.shutdown();
+    _subs = nullptr;
   }
-  void switchOn(void)
+  void switchOn()
   {
-    _subs = _nh->subscribe(_topic, 1, &ThreadLocalize::laserCallBack, _localizer);
+    _subs = _node->create_subscription<sensor_msgs::msg::LaserScan>(
+      _topic,
+      rclcpp::QoS(3).reliable(), 
+      std::bind(&ThreadLocalize::laserCallBack, _localizer, std::placeholders::_1)
+    );
   }
-  ros::Subscriber _subs;
+  std::shared_ptr<rclcpp::Subscription<sensor_msgs::msg::LaserScan>> _subs;
   std::string _topic;
   ThreadLocalize* _localizer;
-  ros::NodeHandle* _nh;
+  std::shared_ptr<rclcpp::Node> _node;
 };
 
 /**
@@ -72,7 +83,7 @@ public:
   /**
    * Default constructor
    */
-  SlamNode(void);
+  SlamNode();
 
   /**
    * Destructor
@@ -83,27 +94,28 @@ public:
    * start
    * Method to start the SLAM
    */
-  void start(void){this->run();}
+  void start(){this->run();}
 private:
 
   /**
    * run
    * Main SLAM method
    */
-  void run(void);
+  void run();
 
   /**
    * timedGridPub
    * Enables occupancy grid thread with certain frequency
    */
-  void timedGridPub(void);
+  void timedGridPub();
 
-  bool callBackServiceStartStopSLAM(ohm_tsd_slam::StartStopSLAM::Request& req, ohm_tsd_slam::StartStopSLAM::Response& res);
+  bool callBackServiceStartStopSLAM(const std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Request> req,
+                                    std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Response> res);
 
   /**
    * Main node handle
    */
-  ros::NodeHandle _nh;
+  std::shared_ptr<rclcpp::Node> _node;
 
   /**
    * Representation
@@ -133,12 +145,12 @@ private:
   /**
    * Rate used for occupancy grid generation
    */
-  ros::Duration* _gridInterval;
+  std::shared_ptr<rclcpp::Duration> _gridInterval;
 
   /**
    * Desired loop rate
    */
-  ros::Rate* _loopRate;
+  std::shared_ptr<rclcpp::Rate> _loopRate;
 
   /**
    * Ros laser subscriber
@@ -150,9 +162,7 @@ private:
    */
   std::vector<ThreadLocalize*> _localizers;
 
-  ros::ServiceServer _serviceStartStopSLAM;
+  std::shared_ptr<rclcpp::Service<ohm_tsd_slam::srv::StartStopSLAM>> _serviceStartStopSLAM;
 };
 
 } /* namespace ohm_tsd_slam */
-
-#endif /* SLAMNODE_H_ */

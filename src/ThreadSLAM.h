@@ -1,5 +1,9 @@
-#ifndef THREADSLAM_H_
-#define THREADSLAM_H_
+/*
+ * ThreadSLAM.h
+ *
+ * Refactored by: Christian Wendt
+ */
+#pragma once
 
 #include <boost/thread.hpp>
 
@@ -81,5 +85,3 @@ protected:
 };
 
 } /* namespace ohm_tsd_slam */
-
-#endif /* THREADSLAM_H_ */

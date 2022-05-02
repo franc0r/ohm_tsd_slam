@@ -7,47 +7,55 @@
 
 #include "OdometryAnalyzer.h"
 #include <geometry_msgs/PoseStamped.h>
+#include <memory>
 #include <tf/tf.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 namespace ohm_tsd_slam
 {
 
-OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid):
+OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr<rclcpp::Node>& node):
 					_grid(grid),
 					_stampLaser(ros::Time::now())
 
 {
-  ros::NodeHandle prvNh("~");
+  node->declare_parameter<double>("wait_for_odom_tf", 1.0);
+  node->declare_parameter<double>("reg_trs_max", TRNS_THRESH);
+  node->declare_parameter<double>("reg_sin_rot_max", ROT_THRESH);
+  node->declare_parameter<double>("max_velocity_rot", ROT_VEL_MAX);
+  node->declare_parameter<double>("max_velocity_lin", TRNS_VEL_MAX);
+
+  node->declare_parameter<std::string>("tf_odom_frame", "odom");
+  node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
+  node->declare_parameter<std::string>("tf_child_frame", "laser");
+  node->declare_parameter<std::string>("tf_base_frame", "/map");
 
   //odom rescue
-  double duration;
-  prvNh.param<double>("wait_for_odom_tf", duration, 1.0);
-  _waitForOdomTf = ros::Duration(duration);
+  _waitForOdomTf = rclcpp::Duration(node->get_parameter("wait_for_odom_tf").as_double());
   _odomTfIsValid = false;
 
   //Maximum allowed offset between two aligned scans
-  prvNh.param<double>("reg_trs_max",_trnsMax, TRNS_THRESH);
-  prvNh.param<double>("reg_sin_rot_max", _rotMax, ROT_THRESH);
+  _trnsMax = node->get_parameter("reg_trs_max").as_double();
+  _rotMax = node->get_parameter("reg_sin_rot_max").as_double();
 
   //Maximum robot speed at footprint frame
-  prvNh.param<double>("max_velocity_rot", _rotVelocityMax, ROT_VEL_MAX);
-  prvNh.param<double>("max_velocity_lin", _trnsVelocityMax, TRNS_VEL_MAX);
+  _rotVelocityMax = node->get_parameter("max_velocity_rot").as_double();
+  _trnsVelocityMax = node->get_parameter("max_velocity_lin").as_double();
 
-  prvNh.param("tf_odom_frame", _tfOdomFrameId, std::string("odom"));
-  prvNh.param("tf_footprint_frame", _tfFootprintFrameId, std::string("base_footprint"));
-  prvNh.param("tf_child_frame", _tfChildFrameId, std::string("laser"));
-  prvNh.param("tf_base_frame", _tfBaseFrameId, std::string("/map"));
+  _tfOdomFrameId = node->get_parameter("tf_odom_frame").as_string();
+  _tfFootprintFrameId = node->get_parameter("tf_footprint_frame").as_string();
+  _tfChildFrameId = node->get_parameter("tf_child_frame").as_string();
+  _tfBaseFrameId = node->get_parameter("tf_base_frame").as_string();
 
- // _tfLaser.setOrigin(tf::Vector3(0.0, 0.0, 0.0));
- // _tfLaser.setRotation(tf::Quaternion(0.0, 0.0, 0.0, 1.0));
-
- // _tfReader.setOrigin(tf::Vector3(0.0, 0.0, 0.0));
- // _tfReader.setRotation(tf::Quaternion(0.0, 0.0, 0.0, 1.0));
-
+  // Set up tf with default buffer length.
+  _tfBuffer = std::make_unique<tf2_ros::Buffer>();
+  _tfTransformListener = std::make_unique<tf2_ros::TransformListener>(*_tfBuffer);
 }
 
 OdometryAnalyzer::~OdometryAnalyzer()
 {
+
 }
 
 void OdometryAnalyzer::odomRescueInit()
