@@ -6,18 +6,23 @@
  */
 
 #include "OdometryAnalyzer.h"
-#include <geometry_msgs/PoseStamped.h>
-#include <memory>
-#include <tf/tf.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+
+#include <rclcpp/logging.hpp>
+#include <tf2/convert.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+
+#include <memory>
 
 namespace ohm_tsd_slam
 {
 
 OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr<rclcpp::Node>& node):
 					_grid(grid),
-					_stampLaser(ros::Time::now())
+					_stampLaser(node->get_clock()->now()),
+          _waitForOdomTf(rclcpp::Duration::from_seconds(1.0)),
+          _node(node)
 
 {
   node->declare_parameter<double>("wait_for_odom_tf", 1.0);
@@ -32,7 +37,7 @@ OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr
   node->declare_parameter<std::string>("tf_base_frame", "/map");
 
   //odom rescue
-  _waitForOdomTf = rclcpp::Duration(node->get_parameter("wait_for_odom_tf").as_double());
+  _waitForOdomTf = rclcpp::Duration::from_seconds(node->get_parameter("wait_for_odom_tf").as_double());
   _odomTfIsValid = false;
 
   //Maximum allowed offset between two aligned scans
@@ -49,7 +54,7 @@ OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr
   _tfBaseFrameId = node->get_parameter("tf_base_frame").as_string();
 
   // Set up tf with default buffer length.
-  _tfBuffer = std::make_unique<tf2_ros::Buffer>();
+  _tfBuffer = std::make_unique<tf2_ros::Buffer>(_node->get_clock());
   _tfTransformListener = std::make_unique<tf2_ros::TransformListener>(*_tfBuffer);
 }
 
@@ -63,20 +68,22 @@ void OdometryAnalyzer::odomRescueInit()
 	std::cout << __PRETTY_FUNCTION__ << " enter RESCUE INIT " << std::endl;
   //get tf -> laser transform at init, assuming its a static transform
 	std::cout << __PRETTY_FUNCTION__ << " try from " << _tfFootprintFrameId << " to " << _tfChildFrameId << std::endl;
+  const auto now = _node->get_clock()->now();
   try
   {
-    _tfListener.waitForTransform(_tfFootprintFrameId, _tfChildFrameId, ros::Time(0), ros::Duration(10.0));
-	_tfListener.lookupTransform(_tfFootprintFrameId, _tfChildFrameId, ros::Time(0), _tfReader);
+    _tfBuffer->canTransform(_tfFootprintFrameId, _tfChildFrameId, now, rclcpp::Duration::from_seconds(10.0));
+    _tfReader = _tfBuffer->lookupTransform(_tfFootprintFrameId, _tfChildFrameId, now);
   }
-  catch(tf::TransformException& ex)
+  catch(tf2::TransformException& ex)
   {
-	ROS_ERROR("%s", ex.what());
-	ros::Duration(1.0).sleep();
-	exit(EXIT_FAILURE);
+    // TODO: Code smell. exit() seems wrong.
+    RCLCPP_ERROR_STREAM(_node->get_logger(), std::string(ex.what()));
+  	sleep(1.0);
+	  exit(EXIT_FAILURE);
   }
 
-  ROS_INFO_STREAM("Received static base_footprint to laser tf for odom rescue");
-  _tfLaser = _tfReader;
+  RCLCPP_INFO(_node->get_logger(), "Received static base_footprint to laser tf for odom rescue.");
+  tf2::fromMsg(_tfReader, _tfLaser);
 	obvious::Matrix tfLaserMatrix = tfToObviouslyMatrix3x3(_tfLaser);
 	std::cout << __PRETTY_FUNCTION__ << "tfLaserMatrix = \n" << std::endl;
 	tfLaserMatrix.print();
@@ -85,19 +92,20 @@ void OdometryAnalyzer::odomRescueInit()
 	std::cout << __PRETTY_FUNCTION__ << " try from " << _tfBaseFrameId << " to " << _tfOdomFrameId << std::endl;
   try
   {
-    _tfListener.waitForTransform(_tfBaseFrameId, _tfOdomFrameId, ros::Time(0), ros::Duration(10.0));
-    _tfListener.lookupTransform(_tfBaseFrameId, _tfOdomFrameId, ros::Time(0), _tfReader);
+    _tfBuffer->canTransform(_tfBaseFrameId, _tfOdomFrameId, now, rclcpp::Duration::from_seconds(10.0));
+    _tfReader = _tfBuffer->lookupTransform(_tfBaseFrameId, _tfOdomFrameId, now);
   }
-  catch(tf::TransformException& ex)
+  catch(tf2::TransformException& ex)
   {
-    ROS_ERROR("%s", ex.what());
-    ros::Duration(1.0).sleep();
-    exit(EXIT_FAILURE);
+    // TODO: Code smell. exit() seems wrong.
+    RCLCPP_ERROR(_node->get_logger(), ex.what());
+  	sleep(1.0);
+	  exit(EXIT_FAILURE);
   }
 
-  ROS_INFO_STREAM("Received first odom tf for initialization of odom rescue");
+  RCLCPP_INFO(_node->get_logger(), "Received first odom tf for initialization of odom rescue");
   //transform odom to laser frame
-  _tfOdomOld = _tfReader;
+  tf2::fromMsg(_tfReader, _tfOdomOld);
 	obvious::Matrix tfOdomOldMatrix = tfToObviouslyMatrix3x3(_tfOdomOld);
 	std::cout << __PRETTY_FUNCTION__ << "tfOdomOldMatrix = \n" << std::endl;
 	tfOdomOldMatrix.print();
@@ -108,22 +116,23 @@ void OdometryAnalyzer::odomRescueUpdate()
   //get new odom tf
   try
   {
-	  _tfListener.waitForTransform(_tfBaseFrameId, _tfOdomFrameId, _stampLaser, _waitForOdomTf);
-	  _tfListener.lookupTransform(_tfBaseFrameId, _tfOdomFrameId, _stampLaser, _tfReader);
+    const auto now = _node->get_clock()->now();
+	  _tfBuffer->canTransform(_tfBaseFrameId, _tfOdomFrameId, _stampLaser, _waitForOdomTf);
+    _tfReader = _tfBuffer->lookupTransform(_tfBaseFrameId, _tfOdomFrameId, _stampLaser);
   }
-  catch(tf::TransformException& ex)
+  catch(tf2::TransformException& ex)
   {
-    ROS_ERROR("%s", ex.what());
+    RCLCPP_ERROR(_node->get_logger(), ex.what());
     _odomTfIsValid = false;
   }
 
-  _tfOdom = _tfReader;
+  tf2::fromMsg(_tfReader, _tfOdom);
 	obvious::Matrix tfOdomMatrix = tfToObviouslyMatrix3x3(_tfOdom);
 	std::cout << __PRETTY_FUNCTION__ << "tfOdomMatrix = \n" << std::endl;
 	tfOdomMatrix.print();
 
   //calculate diff odom -> odom(t-1) - odom(t)
-  _tfRelativeOdom = _tfOdomOld.inverse() * _tfOdom;
+  _tfRelativeOdom.setData(_tfOdomOld.inverse() * _tfOdom);
 
   std::cout << __PRETTY_FUNCTION__ << "_odomTfIsValid = " << _odomTfIsValid << std::endl;
 
@@ -169,8 +178,8 @@ void OdometryAnalyzer::odomRescueCheck(obvious::Matrix& T_slam)
   std::cout << __PRETTY_FUNCTION__ << "T_slam transformed into odom frame (from laser to basefootprint): T_laserOnBaseFootprint = \n" << T_laserOnBaseFootprint << std::endl;
 
   //get dt
-  ros::Duration dtRos 	= _stampLaser - _stampLaserOld;
-  double dt 			= dtRos.sec + dtRos.nsec * 1e-9;
+  rclcpp::Duration dtRos 	= _stampLaser - _stampLaserOld;
+  double dt 			= dtRos.seconds() + dtRos.nanoseconds() * 1e-9;
   std::cout << "dt = " << dt << std::endl;
   //get velocities
   double dx 		= T_laserOnBaseFootprint(0, 2);
@@ -202,7 +211,7 @@ void OdometryAnalyzer::odomRescueCheck(obvious::Matrix& T_slam)
 	{
 	  if(1)//drot > _rotVelocityMax || vtrans > _trnsVelocityMax)
 	  {
-		  ROS_INFO("------ODOM-RECOVER------");
+      RCLCPP_INFO(_node->get_logger(), "------ODOM-RECOVER------");
 
 		  T_slam = 	  tfToObviouslyMatrix3x3(_tfLaser).getInverse() *
 				  	  tfToObviouslyMatrix3x3(_tfRelativeOdom) *
@@ -214,13 +223,14 @@ void OdometryAnalyzer::odomRescueCheck(obvious::Matrix& T_slam)
 	}
 }
 
-obvious::Matrix OdometryAnalyzer::tfToObviouslyMatrix3x3(const tf::Transform& tf)
+obvious::Matrix OdometryAnalyzer::tfToObviouslyMatrix3x3(const tf2::Stamped<tf2::Transform>& tf)
 {
 	std::cout << __PRETTY_FUNCTION__ << " enter " << std::endl;
   obvious::Matrix ob(3,3);
   ob.setIdentity();
-  tf.getRotation();
-  double theta = tf::getYaw(tf.getRotation());
+  const auto q = tf.getRotation();
+  // https://stackoverflow.com/questions/5782658/extracting-yaw-from-a-quaternion
+  double theta = std::atan2(2.0*(q.y()*q.z() + q.w()*q.x()), q.w()*q.w() - q.x()*q.x() - q.y()*q.y() + q.z()*q.z());
   double x = tf.getOrigin().getX();
   double y = tf.getOrigin().getY();
 

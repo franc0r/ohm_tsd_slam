@@ -14,8 +14,10 @@
 
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <tf2/transform_datatypes.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <string>
 
@@ -60,7 +62,7 @@ private:
    * @param tf tf matrix to convert
    * @return obviously matrix
    */
-  obvious::Matrix tfToObviouslyMatrix3x3(const tf2::Transform& tf);
+  obvious::Matrix tfToObviouslyMatrix3x3(const tf2::Stamped<tf2::Transform>& tf);
 
   /**
    * Method to analyze 2D transformation matrix.
@@ -86,12 +88,12 @@ private:
   std::string _tfChildFrameId;
 
   //Transform from base footprint to laser
-  tf2::Transform _tfLaser;
+  tf2::Stamped<tf2::Transform> _tfLaser;
 
   //Odom Transforms
-  tf2::Transform _tfOdomOld;
-  tf2::Transform _tfOdom;
-  tf2::Transform _tfRelativeOdom;
+  tf2::Stamped<tf2::Transform> _tfOdomOld;
+  tf2::Stamped<tf2::Transform> _tfOdom;
+  tf2::Stamped<tf2::Transform> _tfRelativeOdom;
 
   //Laser time stamps
   rclcpp::Time _stampLaser;

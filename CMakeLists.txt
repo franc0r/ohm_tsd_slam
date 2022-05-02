@@ -14,6 +14,10 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 find_package(Boost COMPONENTS thread REQUIRED)
 find_package(OpenMP REQUIRED)
 
@@ -28,7 +32,7 @@ add_executable(slam
   src/ThreadSLAM.cpp
   src/ThreadMapping.cpp
   src/ThreadGrid.cpp
-  # src/OdometryAnalyzer.cpp
+  src/OdometryAnalyzer.cpp
 )
 target_include_directories(slam
   PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -44,6 +48,9 @@ ament_target_dependencies(slam
   nav_msgs
   geometry_msgs
   sensor_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
 )
 target_link_libraries(slam
   obvision
