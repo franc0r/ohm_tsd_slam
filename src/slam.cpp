@@ -5,19 +5,18 @@
  *      Author: phil
  */
 
-// #include "SlamNode.h"
+#include "SlamNode.h"
+
+#include <rclcpp/executors.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/utilities.hpp>
 
-// #include "obcore/base/Logger.h"
-
 int main(int argc, char** argv)
 {
-  // ros::init(argc, argv, "slam_node");
   rclcpp::init(argc, argv);
-  // LOGMSG_CONF("slamlog.log", obvious::Logger::file_off|obvious::Logger::screen_off, DBG_DEBUG, DBG_ERROR);
+  LOGMSG_CONF("slamlog.log", obvious::Logger::file_off|obvious::Logger::screen_off, DBG_DEBUG, DBG_ERROR);
 
-  // ohm_tsd_slam::SlamNode slamNode;
-  // slamNode.start();
+  rclcpp::spin(std::make_shared<ohm_tsd_slam::SlamNode>());
+  rclcpp::shutdown();
 }
 

@@ -6,6 +6,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/node.hpp>
 #include <rclcpp/rate.hpp>
@@ -13,6 +14,7 @@
 
 #include <rclcpp/service.hpp>
 #include <rclcpp/subscription.hpp>
+#include <rclcpp/timer.hpp>
 #include <sensor_msgs/msg/detail/laser_scan__struct.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 
@@ -40,15 +42,12 @@ class ThreadGrid;
 
 struct TaggedSubscriber
 {
-  TaggedSubscriber(std::string topic, ThreadLocalize& localizer, const std::shared_ptr<rclcpp::Node>& node):
-    _topic(topic),
+  TaggedSubscriber(std::string topic, ThreadLocalize& localizer, const std::shared_ptr<rclcpp::Node>& node)
+  : _topic(topic),
     _localizer(&localizer),
     _node(node)
   {}
-  TaggedSubscriber():
-    _localizer(nullptr),
-    _node(nullptr)
-  {}
+  TaggedSubscriber() = default;
   bool topic(const std::string topic)
   {
     return topic == _topic;
@@ -67,7 +66,7 @@ struct TaggedSubscriber
   }
   std::shared_ptr<rclcpp::Subscription<sensor_msgs::msg::LaserScan>> _subs;
   std::string _topic;
-  ThreadLocalize* _localizer;
+  ThreadLocalize* _localizer = nullptr;
   std::shared_ptr<rclcpp::Node> _node;
 };
 
@@ -76,7 +75,7 @@ struct TaggedSubscriber
  * @brief Main node management of the 2D SLAM
  * @author Philipp Koch
  */
-class SlamNode
+class SlamNode : public rclcpp::Node
 {
 public:
 
@@ -90,18 +89,7 @@ public:
    */
   virtual ~SlamNode();
 
-  /**
-   * start
-   * Method to start the SLAM
-   */
-  void start(){this->run();}
 private:
-
-  /**
-   * run
-   * Main SLAM method
-   */
-  void run();
 
   /**
    * timedGridPub
@@ -111,11 +99,6 @@ private:
 
   bool callBackServiceStartStopSLAM(const std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Request> req,
                                     std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Response> res);
-
-  /**
-   * Main node handle
-   */
-  std::shared_ptr<rclcpp::Node> _node;
 
   /**
    * Representation
@@ -145,12 +128,13 @@ private:
   /**
    * Rate used for occupancy grid generation
    */
-  std::shared_ptr<rclcpp::Duration> _gridInterval;
+  std::unique_ptr<rclcpp::Duration> _gridInterval;
 
   /**
    * Desired loop rate
    */
-  std::shared_ptr<rclcpp::Rate> _loopRate;
+  std::unique_ptr<rclcpp::Rate> _loopRate;
+  std::shared_ptr<rclcpp::TimerBase> _timer;
 
   /**
    * Ros laser subscriber

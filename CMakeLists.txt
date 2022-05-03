@@ -27,7 +27,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 
 add_executable(slam
   src/slam.cpp
-  # src/SlamNode.cpp
+  src/SlamNode.cpp
   src/ThreadLocalize.cpp
   src/ThreadSLAM.cpp
   src/ThreadMapping.cpp
