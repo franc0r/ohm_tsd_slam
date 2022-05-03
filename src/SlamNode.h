@@ -89,6 +89,12 @@ public:
    */
   virtual ~SlamNode();
 
+  /**
+   * @brief Initialize class. It can't be called in contructor.
+   * 
+   */
+  void initialize();
+
 private:
 
   /**
@@ -128,12 +134,12 @@ private:
   /**
    * Rate used for occupancy grid generation
    */
-  std::unique_ptr<rclcpp::Duration> _gridInterval;
+  std::shared_ptr<rclcpp::Duration> _gridInterval;
 
   /**
    * Desired loop rate
    */
-  std::unique_ptr<rclcpp::Rate> _loopRate;
+  std::shared_ptr<rclcpp::Duration> _loopRate;
   std::shared_ptr<rclcpp::TimerBase> _timer;
 
   /**

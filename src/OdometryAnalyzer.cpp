@@ -34,7 +34,6 @@ OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr
   node->declare_parameter<std::string>("tf_odom_frame", "odom");
   node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
   node->declare_parameter<std::string>("tf_child_frame", "laser");
-  node->declare_parameter<std::string>("tf_base_frame", "/map");
 
   //odom rescue
   _waitForOdomTf = rclcpp::Duration::from_seconds(node->get_parameter("wait_for_odom_tf").as_double());

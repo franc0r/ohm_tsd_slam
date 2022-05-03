@@ -43,7 +43,6 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   node->declare_parameter<std::string>("map_topic", "map");
   node->declare_parameter<std::string>("get_map_topic", "map");
   node->declare_parameter<std::string>("topic_tsd_color_map", "tsd");
-  node->declare_parameter<std::string>("tf_base_frame", "map");
   node->declare_parameter<int>("object_inflation_factor", 2);
   node->declare_parameter<bool>("use_object_inflation", false);
 

@@ -87,7 +87,6 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _node->declare_parameter<int>(_nameSpace + "icp_iterations", ICP_ITERATIONS);
 
   _node->declare_parameter<std::string>(_nameSpace + "pose_topic", "default_ns/pose");
-  _node->declare_parameter<std::string>("tf_base_frame", "/map");
   _node->declare_parameter<std::string>(_nameSpace + "tf_child_frame", "default_ns/laser");
   _node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
 

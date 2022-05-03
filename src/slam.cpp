@@ -16,7 +16,10 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   LOGMSG_CONF("slamlog.log", obvious::Logger::file_off|obvious::Logger::screen_off, DBG_DEBUG, DBG_ERROR);
 
-  rclcpp::spin(std::make_shared<ohm_tsd_slam::SlamNode>());
+  auto node = std::make_shared<ohm_tsd_slam::SlamNode>();
+  node->initialize();
+  
+  rclcpp::spin(node);
   rclcpp::shutdown();
 }
 
