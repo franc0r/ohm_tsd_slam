@@ -51,7 +51,7 @@ protected:
    * eventLoop
    * Thread event loop
    */
-  virtual void eventLoop(void);
+  virtual void eventLoop();
 
 private:
 

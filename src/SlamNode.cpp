@@ -128,7 +128,7 @@ void SlamNode::initialize()
     topicServiceStartStop,
     std::bind(&SlamNode::callBackServiceStartStopSLAM, this, std::placeholders::_1, std::placeholders::_2)
   );
-  rclcpp::create_timer(this, get_clock(), *_loopRate, std::bind(&SlamNode::timedGridPub, this));
+  _timer = rclcpp::create_timer(this, get_clock(), *_loopRate, std::bind(&SlamNode::timedGridPub, this));
 }
 
 SlamNode::~SlamNode()
