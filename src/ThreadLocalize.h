@@ -213,7 +213,7 @@ private:
   /**
    * Pointer to main NodeHandle
    */
-  std::shared_ptr<rclcpp::Node> _nh;
+  std::shared_ptr<rclcpp::Node> _node;
   /**
    * Pointer to mapping thread
    */
@@ -395,7 +395,7 @@ private:
   /**
    * ROS tf interface - broadcaster
    */
-  tf2_ros::TransformBroadcaster _tfBroadcaster;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> _tfBroadcaster;
   /**
    * ROS tf interface - listener
    */
@@ -409,7 +409,7 @@ private:
   /**
    * ROS current transform
    */
-  tf2::Transform _tf;
+  geometry_msgs::msg::TransformStamped _tf;
   /**
    * ROS tf Transform from base_footprint to laser
    */

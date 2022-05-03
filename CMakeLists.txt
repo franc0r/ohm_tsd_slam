@@ -28,7 +28,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 add_executable(slam
   src/slam.cpp
   # src/SlamNode.cpp
-  # src/ThreadLocalize.cpp
+  src/ThreadLocalize.cpp
   src/ThreadSLAM.cpp
   src/ThreadMapping.cpp
   src/ThreadGrid.cpp
@@ -62,6 +62,7 @@ target_link_libraries(slam
   flann
   Boost::thread
   OpenMP::OpenMP_CXX
+  lz4
 )
 rosidl_target_interfaces(slam ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
