@@ -25,7 +25,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/StartStopSLAM.srv"
 )
 
-add_executable(slam
+add_executable(slam_node
   src/slam.cpp
   src/SlamNode.cpp
   src/ThreadLocalize.cpp
@@ -34,16 +34,16 @@ add_executable(slam
   src/ThreadGrid.cpp
   src/OdometryAnalyzer.cpp
 )
-target_include_directories(slam
+target_include_directories(slam_node
   PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
           $<INSTALL_INTERFACE:include>
   PRIVATE /usr/local/usr/include/obviously
 )
-target_compile_features(slam PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_link_directories(slam
+target_compile_features(slam_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_directories(slam_node
   PRIVATE /usr/local/usr/lib
 )
-ament_target_dependencies(slam
+ament_target_dependencies(slam_node
   rclcpp
   nav_msgs
   geometry_msgs
@@ -52,7 +52,7 @@ ament_target_dependencies(slam
   tf2_ros
   tf2_geometry_msgs
 )
-target_link_libraries(slam
+target_link_libraries(slam_node
   obvision
   obcore
   gsl
@@ -64,10 +64,23 @@ target_link_libraries(slam
   OpenMP::OpenMP_CXX
   lz4
 )
-rosidl_target_interfaces(slam ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(slam_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-install(TARGETS slam
+# Install node(s)
+install(TARGETS slam_node
   DESTINATION lib/${PROJECT_NAME})
+
+# Install all launch files.
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# Install all config files.
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

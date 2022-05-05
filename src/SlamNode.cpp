@@ -28,14 +28,13 @@ void SlamNode::initialize()
 {
   int iVar                   = 0;
   double gridPublishInterval = 0.0;
-  double loopRateVar         = 0.0;
   double truncationRadius    = 0.0;
   double cellSize            = 0.0;
   unsigned int octaveFactor  = 0;
   double xOffset = 0.0;
   double yOffset = 0.0;
-  std::string topicLaser;
-  std::string topicServiceStartStop;
+  const std::string topicLaser = "laser";
+  const std::string topicServiceStartStop = "start_stop_slam";
 
   declare_parameter<int>("robot_nbr", 1);
   declare_parameter<double>("x_off_factor", 0.5);
@@ -54,10 +53,8 @@ void SlamNode::initialize()
   declare_parameter<double>("cellsize", 0.025);
   declare_parameter<int>("truncation_radius", 3);
   declare_parameter<double>("occ_grid_time_interval", 2.0);
-  declare_parameter<double>("loop_rate", 40.0);
-  declare_parameter<std::string>("laser_topic", "scan");
-  declare_parameter<std::string>("topic_service_start_stop", "start_stop_slam");
-  declare_parameter<std::string>("tf_base_frame", "/map");
+  // declare_parameter<std::string>("topic_service_start_stop", "start_stop_slam");
+  declare_parameter<std::string>("tf_base_frame", "map");
 
   iVar = get_parameter("map_size").as_int();
   octaveFactor = static_cast<unsigned int>(iVar);
@@ -65,11 +62,9 @@ void SlamNode::initialize()
   iVar = get_parameter("truncation_radius").as_int();
   truncationRadius = static_cast<double>(iVar);
   gridPublishInterval = get_parameter("occ_grid_time_interval").as_double();
-  loopRateVar = get_parameter("loop_rate").as_double();
-  topicLaser = get_parameter("laser_topic").as_string();
-  topicServiceStartStop = get_parameter("topic_service_start_stop").as_string();
+  // topicLaser = get_parameter("laser_topic").as_string(); // TODO: code smell! Should be configured via topic remapping.
+  // topicServiceStartStop = get_parameter("topic_service_start_stop").as_string();
 
-  _loopRate = std::make_unique<rclcpp::Duration>(rclcpp::Duration::from_seconds(1.0 / loopRateVar));
   _gridInterval = std::make_unique<rclcpp::Duration>(rclcpp::Duration::from_seconds(gridPublishInterval));
 
   if(octaveFactor > 15)
@@ -99,24 +94,24 @@ void SlamNode::initialize()
     threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), nameSpace, xOffset, yOffset);
     subs = TaggedSubscriber(topicLaser, *threadLocalize, shared_from_this());
     subs.switchOn();
-    //subs = _nh.subscribe(topicLaser, 1, &ThreadLocalize::laserCallBack, threadLocalize);
     _subsLaser.push_back(subs);
     _localizers.push_back(threadLocalize);
     RCLCPP_INFO_STREAM(get_logger(), "Single SLAM started");
   }
   else
   {
+    // TODO: not tested after change to ROS2!
     for(unsigned int i = 0; i < robotNbr; i++)   //multi slam
     {
+      // get parameter robot_i.name and use it as namespace for each robot
       std::stringstream sstream;
-      sstream << "robot";
-      sstream << i << "/" << nameSpace;
-      std::string dummy = sstream.str();
-      declare_parameter<std::string>(dummy, "default_ns");
-      nameSpace = get_parameter(dummy).as_string();
+      sstream << "robot_" << i;
+      const std::string name_parameter_robot = sstream.str();
+      const std::string parameter_name =  name_parameter_robot + ".name";
+      declare_parameter<std::string>(parameter_name, name_parameter_robot);
+      nameSpace = get_parameter(parameter_name).as_string();
 
       threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), nameSpace, xOffset, yOffset);
-//      subs = _nh.subscribe(nameSpace + "/" + topicLaser, 1, &ThreadLocalize::laserCallBack, threadLocalize);
       subs = TaggedSubscriber(nameSpace + "/" + topicLaser, *threadLocalize, shared_from_this());
       _subsLaser.push_back(subs);
       _localizers.push_back(threadLocalize);
@@ -124,11 +119,12 @@ void SlamNode::initialize()
     }
     RCLCPP_INFO_STREAM(get_logger(), "Multi SLAM started!");
   }
+
   _serviceStartStopSLAM = create_service<ohm_tsd_slam::srv::StartStopSLAM>(
     topicServiceStartStop,
     std::bind(&SlamNode::callBackServiceStartStopSLAM, this, std::placeholders::_1, std::placeholders::_2)
   );
-  _timer = rclcpp::create_timer(this, get_clock(), *_loopRate, std::bind(&SlamNode::timedGridPub, this));
+  _timer = rclcpp::create_timer(this, get_clock(), *_gridInterval, std::bind(&SlamNode::timedGridPub, this));
 }
 
 SlamNode::~SlamNode()
@@ -156,27 +152,8 @@ SlamNode::~SlamNode()
 
 void SlamNode::timedGridPub()
 {
-  static rclcpp::Time lastMap = get_clock()->now();
-  const rclcpp::Time curTime = get_clock()->now();
-
-  if((curTime - lastMap) > *_gridInterval)
-  {
-    _threadGrid->unblock();
-    lastMap = curTime;
-  }
+  _threadGrid->unblock();
 }
-
-// void SlamNode::run()
-// {
-//   RCLCPP_INFO_STREAM(get_logger(), "Waiting for first laser scan to initialize node...");
-//   ROS_INFO_STREAM("Waiting for first laser scan to initialize node...\n");
-//   while(ros::ok())
-//   {
-//     ros::spinOnce();
-//     timedGridPub();
-//     _loopRate->sleep();
-//   }
-// }
 
 bool SlamNode::callBackServiceStartStopSLAM(const std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Request> req,
                                             std::shared_ptr<ohm_tsd_slam::srv::StartStopSLAM::Response>)
