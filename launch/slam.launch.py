@@ -21,7 +21,7 @@ def generate_launch_description():
                 # Publisher
                 ('/tsd_slam/map', 'tsd_slam/map'),
                 ('/tsd_slam/estimated_pose', 'tsd_slam/estimated_pose'),
-                ('/tsd_slam/map/image', 'tsd_slam/map/image2'),
+                ('/tsd_slam/map/image', 'tsd_slam/map/image'),
                 # Services
                 ('/tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
                 ('/tsd_slam/get_map', 'tsd_slam/get_map')

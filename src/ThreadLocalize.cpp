@@ -88,30 +88,36 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _node->declare_parameter<int>(_robotName + "icp_iterations", ICP_ITERATIONS);
 
   _node->declare_parameter<std::string>(_robotName + "tf_child_frame", _robotName + "laser");
-  _node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
 
-  _node->declare_parameter<double>("reg_trs_max", TRNS_THRESH);
-  _node->declare_parameter<double>("reg_sin_rot_max", ROT_THRESH);
-  _node->declare_parameter<double>("max_velocity_lin", TRNS_VEL_MAX);
-  _node->declare_parameter<double>("max_velocity_rot", ROT_VEL_MAX);
-  _node->declare_parameter<bool>  ("ude_odom_rescue", false);
-  _node->declare_parameter<double>("wait_for_odom_tf", 1.0);
-  _node->declare_parameter<double>("laser_min_range", 0.0);
-  _node->declare_parameter<int>   ("trials", 100);
-  _node->declare_parameter<int>   ("sizeControlSet", 140);
-  _node->declare_parameter<double>("epsThresh", 0.15);
-  _node->declare_parameter<double>("zhit", 0.45);
-  _node->declare_parameter<double>("zphi", 0);
-  _node->declare_parameter<double>("zshort", 0.25);
-  _node->declare_parameter<double>("zmax", 0.05);
-  _node->declare_parameter<double>("zrand", 0.25);
-  _node->declare_parameter<double>("percentagePointsInC", 0.9);
-  _node->declare_parameter<double>("rangemax", 20);
-  _node->declare_parameter<double>("sigphi", M_PI / 180.0 * 3);
-  _node->declare_parameter<double>("sighit", 0.2);
-  _node->declare_parameter<double>("lamshort", 0.08);
-  _node->declare_parameter<double>("maxAngleDiff", 3.0);
-  _node->declare_parameter<double>("maxAnglePenalty", 0.5);
+  try {
+    _node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
+
+    _node->declare_parameter<double>("reg_trs_max", TRNS_THRESH);
+    _node->declare_parameter<double>("reg_sin_rot_max", ROT_THRESH);
+    _node->declare_parameter<double>("max_velocity_lin", TRNS_VEL_MAX);
+    _node->declare_parameter<double>("max_velocity_rot", ROT_VEL_MAX);
+    _node->declare_parameter<bool>  ("ude_odom_rescue", false);
+    _node->declare_parameter<double>("wait_for_odom_tf", 1.0);
+    _node->declare_parameter<double>("laser_min_range", 0.0);
+    _node->declare_parameter<int>   ("trials", 100);
+    _node->declare_parameter<int>   ("sizeControlSet", 140);
+    _node->declare_parameter<double>("epsThresh", 0.15);
+    _node->declare_parameter<double>("zhit", 0.45);
+    _node->declare_parameter<double>("zphi", 0);
+    _node->declare_parameter<double>("zshort", 0.25);
+    _node->declare_parameter<double>("zmax", 0.05);
+    _node->declare_parameter<double>("zrand", 0.25);
+    _node->declare_parameter<double>("percentagePointsInC", 0.9);
+    _node->declare_parameter<double>("rangemax", 20);
+    _node->declare_parameter<double>("sigphi", M_PI / 180.0 * 3);
+    _node->declare_parameter<double>("sighit", 0.2);
+    _node->declare_parameter<double>("lamshort", 0.08);
+    _node->declare_parameter<double>("maxAngleDiff", 3.0);
+    _node->declare_parameter<double>("maxAnglePenalty", 0.5);
+  }
+  catch (rclcpp::exceptions::ParameterAlreadyDeclaredException& ex) {
+    // All fine! In case of an multislam these paramters are declared multiple times.
+  }
 
   _node->declare_parameter<int>(_robotName + "ransac_trials", RANSAC_TRIALS);
   _node->declare_parameter<double>(_robotName + "ransac_eps_thresh", RANSAC_EPS_THRESH);

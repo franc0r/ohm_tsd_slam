@@ -107,7 +107,7 @@ void SlamNode::initialize()
       std::stringstream sstream;
       sstream << "robot_" << i;
       const std::string name_parameter_robot = sstream.str();
-      const std::string parameter_name =  name_parameter_robot + ".name";
+      const std::string parameter_name =  name_parameter_robot + "/name";
       declare_parameter<std::string>(parameter_name, name_parameter_robot);
       const std::string robot_name = get_parameter(parameter_name).as_string();
       nameSpace = std::string(get_name()) + "/" + robot_name;
