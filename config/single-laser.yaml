@@ -1,4 +1,4 @@
-/slam_node:
+/tsd_slam:
   ros__parameters:
     cellsize: 0.025
     epsThresh: 0.15

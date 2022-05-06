@@ -40,9 +40,9 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   _occGrid->data.resize(_grid.getCellsX() * _grid.getCellsY());
 
   node->declare_parameter<bool>("pub_tsd_color_map", true);
-  node->declare_parameter<std::string>("map_topic", "map");
-  node->declare_parameter<std::string>("get_map_topic", "map");
-  node->declare_parameter<std::string>("topic_tsd_color_map", "tsd");
+  // node->declare_parameter<std::string>("map_topic", "map");
+  // node->declare_parameter<std::string>("get_map_topic", "map");
+  // node->declare_parameter<std::string>("topic_tsd_color_map", "tsd");
   node->declare_parameter<int>("object_inflation_factor", 2);
   node->declare_parameter<bool>("use_object_inflation", false);
 
@@ -51,14 +51,13 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   _objectInflation = node->get_parameter("use_object_inflation").as_bool(); //toDo: exchange with if inflation > 0
   _objInflateFactor = static_cast<unsigned int>(node->get_parameter("object_inflation_factor").as_int());
 
-  _gridPub = node->create_publisher<nav_msgs::msg::OccupancyGrid>(node->get_parameter("map_topic").as_string(), rclcpp::QoS(1).reliable());
-  _pubColorImage = node->create_publisher<sensor_msgs::msg::Image>(node->get_parameter("topic_tsd_color_map").as_string(), rclcpp::QoS(1).best_effort());
+  const std::string node_name = _node->get_name();
+  _gridPub = node->create_publisher<nav_msgs::msg::OccupancyGrid>(node_name + "/map", rclcpp::QoS(1).reliable());
+  _pubColorImage = node->create_publisher<sensor_msgs::msg::Image>(node_name + "/map/image", rclcpp::QoS(1).best_effort());
 
   _getMapServ = node->create_service<nav_msgs::srv::GetMap>(
-    node->get_parameter("get_map_topic").as_string(),
-    std::bind(&ThreadGrid::getMapServCallBack,
-    this, std::placeholders::_1,
-    std::placeholders::_2)
+    node_name + "/get_map",
+    std::bind(&ThreadGrid::getMapServCallBack, this, std::placeholders::_1, std::placeholders::_2)
   );
 }
 

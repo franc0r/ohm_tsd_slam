@@ -17,11 +17,14 @@ def generate_launch_description():
             name='tsd_slam',
             remappings=[
                 # Subscriptions
-                ('tsd_slam/laser', 'tsd_slam/laser'),
-                # missing: pub pose topic
+                ('/tsd_slam/laser', 'tsd_slam/laser'),
+                # Publisher
+                ('/tsd_slam/map', 'tsd_slam/map'),
+                ('/tsd_slam/estimated_pose', 'tsd_slam/estimated_pose'),
+                ('/tsd_slam/map/image', 'tsd_slam/map/image2'),
                 # Services
-                ('tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
-                # missing: get map service
+                ('/tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
+                ('/tsd_slam/get_map', 'tsd_slam/get_map')
             ],
             parameters=[config],
         )

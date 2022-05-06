@@ -33,8 +33,9 @@ void SlamNode::initialize()
   unsigned int octaveFactor  = 0;
   double xOffset = 0.0;
   double yOffset = 0.0;
-  const std::string topicLaser = "laser";
+  const std::string topicLaser = std::string(get_name()) + "/laser";
   const std::string topicServiceStartStop = "start_stop_slam";
+  std::string nameSpace = get_name();
 
   declare_parameter<int>("robot_nbr", 1);
   declare_parameter<double>("x_off_factor", 0.5);
@@ -86,12 +87,11 @@ void SlamNode::initialize()
 
   ThreadLocalize* threadLocalize = nullptr;
   TaggedSubscriber subs;
-  std::string nameSpace = get_name();
 
   //instanciate localization threads
   if(robotNbr == 1)  //single slam
   {
-    threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), nameSpace, xOffset, yOffset);
+    threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), "", xOffset, yOffset);
     subs = TaggedSubscriber(topicLaser, *threadLocalize, shared_from_this());
     subs.switchOn();
     _subsLaser.push_back(subs);
@@ -109,9 +109,10 @@ void SlamNode::initialize()
       const std::string name_parameter_robot = sstream.str();
       const std::string parameter_name =  name_parameter_robot + ".name";
       declare_parameter<std::string>(parameter_name, name_parameter_robot);
-      nameSpace = get_parameter(parameter_name).as_string();
+      const std::string robot_name = get_parameter(parameter_name).as_string();
+      nameSpace = std::string(get_name()) + "/" + robot_name;
 
-      threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), nameSpace, xOffset, yOffset);
+      threadLocalize = new ThreadLocalize(_grid, _threadMapping, shared_from_this(), robot_name, xOffset, yOffset);
       subs = TaggedSubscriber(nameSpace + "/" + topicLaser, *threadLocalize, shared_from_this());
       _subsLaser.push_back(subs);
       _localizers.push_back(threadLocalize);

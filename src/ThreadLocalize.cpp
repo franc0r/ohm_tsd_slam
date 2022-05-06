@@ -30,29 +30,28 @@
 namespace ohm_tsd_slam
 {
 
-ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, const std::shared_ptr<rclcpp::Node>& node, std::string nameSpace,
-    const double xOffset, const double yOffset):
-										    ThreadSLAM(*grid),
-										    _node(node),
-										    _mapper(*mapper),
-										    _sensor(nullptr),
-										    _initialized(false),
-										    _gridWidth(grid->getCellsX() * grid->getCellSize()),
-										    _gridHeight(grid->getCellsY() * grid->getCellSize()),
-										    _gridOffSetX(-1.0 * (grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)),
-										    _gridOffSetY(-1.0 * (grid->getCellsY() * grid->getCellSize() * 0.5 + yOffset)),
-										    _xOffset(xOffset),
-										    _yOffset(yOffset),
-										    _nameSpace(nameSpace),
-										    _stampLaser(node->get_clock()->now()),
-                        _waitForOdomTf(rclcpp::Duration::from_seconds(1.0))
+ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, const std::shared_ptr<rclcpp::Node>& node, 
+                               const std::string& robot_name, const double xOffset, const double yOffset)
+  : ThreadSLAM(*grid),
+		_node(node),
+		_mapper(*mapper),
+		_sensor(nullptr),
+		_initialized(false),
+		_gridWidth(grid->getCellsX() * grid->getCellSize()),
+		_gridHeight(grid->getCellsY() * grid->getCellSize()),
+		_gridOffSetX(-1.0 * (grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)),
+		_gridOffSetY(-1.0 * (grid->getCellsY() * grid->getCellSize() * 0.5 + yOffset)),
+		_xOffset(xOffset),
+		_yOffset(yOffset),
+		_robotName(robot_name),
+		_stampLaser(node->get_clock()->now()),
+    _waitForOdomTf(rclcpp::Duration::from_seconds(1.0))
 {
   // ThreadLocalize* threadLocalize = NULL;		///todo wofür hab ich das hier eig. variable wird nicht benutzt?
 
   double distFilterMax  		= 0.0;
   double distFilterMin			= 0.0;
   int icpIterations				= 0;
-  std::string poseTopic;
   double durationWaitForOdom	= 0.0;
   ///RandomMatcher options
   int trials					= 0;
@@ -74,31 +73,32 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   int iVar 						= 0;
 
   /*** Read parameters from ros parameter server. Use namespace if provided. Multirobot use. ***/
-  _nameSpace = nameSpace;
-  std::string::iterator it = _nameSpace.end() - 1;		//stores last symbol of nameSpace
-  if(*it != '/' && _nameSpace.size()>0)
-    _nameSpace += "/";
-  //pose
-  poseTopic = _nameSpace + poseTopic;
+  _robotName = robot_name;
+  std::string::iterator it = _robotName.end() - 1;		//stores last symbol of nameSpace
+  if(*it != '/' && _robotName.size()>0)
+    _robotName += "/";
+  const std::string node_name = std::string(node->get_name()) + "/";
+  const std::string name_space = node_name + _robotName;
+  _nameSpace = name_space;
+  const std::string poseTopic = name_space + "estimated_pose";
 
   //ICP Options
-  _node->declare_parameter<double>(_nameSpace + "dist_filter_max", DIST_FILT_MAX);
-  _node->declare_parameter<double>(_nameSpace + "dist_filter_min", DIST_FILT_MIN);
-  _node->declare_parameter<int>(_nameSpace + "icp_iterations", ICP_ITERATIONS);
+  _node->declare_parameter<double>(_robotName + "dist_filter_max", DIST_FILT_MAX);
+  _node->declare_parameter<double>(_robotName + "dist_filter_min", DIST_FILT_MIN);
+  _node->declare_parameter<int>(_robotName + "icp_iterations", ICP_ITERATIONS);
 
-  _node->declare_parameter<std::string>(_nameSpace + "pose_topic", "default_ns/pose");
-  _node->declare_parameter<std::string>(_nameSpace + "tf_child_frame", "default_ns/laser");
+  _node->declare_parameter<std::string>(_robotName + "tf_child_frame", _robotName + "laser");
   _node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
 
   _node->declare_parameter<double>("reg_trs_max", TRNS_THRESH);
   _node->declare_parameter<double>("reg_sin_rot_max", ROT_THRESH);
   _node->declare_parameter<double>("max_velocity_lin", TRNS_VEL_MAX);
   _node->declare_parameter<double>("max_velocity_rot", ROT_VEL_MAX);
-  _node->declare_parameter<bool>("ude_odom_rescue", false);
+  _node->declare_parameter<bool>  ("ude_odom_rescue", false);
   _node->declare_parameter<double>("wait_for_odom_tf", 1.0);
   _node->declare_parameter<double>("laser_min_range", 0.0);
-  _node->declare_parameter<int>("trials", 100);
-  _node->declare_parameter<int>("sizeControlSet", 140);
+  _node->declare_parameter<int>   ("trials", 100);
+  _node->declare_parameter<int>   ("sizeControlSet", 140);
   _node->declare_parameter<double>("epsThresh", 0.15);
   _node->declare_parameter<double>("zhit", 0.45);
   _node->declare_parameter<double>("zphi", 0);
@@ -113,20 +113,19 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _node->declare_parameter<double>("maxAngleDiff", 3.0);
   _node->declare_parameter<double>("maxAnglePenalty", 0.5);
 
-  _node->declare_parameter<int>(nameSpace + "ransac_trials", RANSAC_TRIALS);
-  _node->declare_parameter<double>(nameSpace + "ransac_eps_thresh", RANSAC_EPS_THRESH);
-  _node->declare_parameter<int>(nameSpace + "ransac_ctrlset_size", RANSAC_CTRL_SET_SIZE);
-  _node->declare_parameter<double>(_nameSpace + "ransac_phi_max", 30.0);
-  _node->declare_parameter<int>(_nameSpace + "registration_mode", ICP);
+  _node->declare_parameter<int>(_robotName + "ransac_trials", RANSAC_TRIALS);
+  _node->declare_parameter<double>(_robotName + "ransac_eps_thresh", RANSAC_EPS_THRESH);
+  _node->declare_parameter<int>(_robotName + "ransac_ctrlset_size", RANSAC_CTRL_SET_SIZE);
+  _node->declare_parameter<double>(_robotName + "ransac_phi_max", 30.0);
+  _node->declare_parameter<int>(_robotName + "registration_mode", ICP);
 
 
-   distFilterMax = _node->get_parameter(_nameSpace + "dist_filter_max").as_double();
-  distFilterMin = _node->get_parameter(_nameSpace + "dist_filter_min").as_double();
-  icpIterations = _node->get_parameter(_nameSpace + "icp_iterations").as_int();
+  distFilterMax = _node->get_parameter(_robotName + "dist_filter_max").as_double();
+  distFilterMin = _node->get_parameter(_robotName + "dist_filter_min").as_double();
+  icpIterations = _node->get_parameter(_robotName + "icp_iterations").as_int();
   
-    poseTopic = _node->get_parameter(_nameSpace + "pose_topic").as_string();
   _tfBaseFrameId = _node->get_parameter("tf_base_frame").as_string();
-  _tfChildFrameId = _node->get_parameter(_nameSpace + "tf_child_frame").as_string();
+  _tfChildFrameId = _node->get_parameter(_robotName + "tf_child_frame").as_string();
   _tfFootprintFrameId = _node->get_parameter("tf_footprint_frame").as_string();
 
   _trnsMax = _node->get_parameter("reg_trs_max").as_double();
@@ -153,15 +152,15 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   maxAnglePenalty = _node->get_parameter("maxAnglePenalty").as_double();
 
   //ransac options
-  paramInt = _node->get_parameter(nameSpace + "ransac_trials").as_int();
+  paramInt = _node->get_parameter(_robotName + "ransac_trials").as_int();
   _ranTrials = static_cast<unsigned int>(paramInt);
 
-  _ranEpsThresh = _node->get_parameter(nameSpace + "ransac_eps_thresh").as_double(); 
-  paramInt = _node->get_parameter(nameSpace + "ransac_ctrlset_size").as_int();
+  _ranEpsThresh = _node->get_parameter(_robotName + "ransac_eps_thresh").as_double(); 
+  paramInt = _node->get_parameter(_robotName + "ransac_ctrlset_size").as_int();
   _ranSizeCtrlSet = static_cast<unsigned int>(paramInt);
 
-  _ranPhiMax = _node->get_parameter(_nameSpace + "ransac_phi_max").as_double();
-  iVar = _node->get_parameter(_nameSpace + "registration_mode").as_int();
+  _ranPhiMax = _node->get_parameter(_robotName + "ransac_phi_max").as_double();
+  iVar = _node->get_parameter(_robotName + "registration_mode").as_int();
   _regMode = static_cast<EnumRegModes>(iVar);
 
   //Align laserscans
@@ -216,7 +215,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _posePub = _node->create_publisher<geometry_msgs::msg::PoseStamped>(poseTopic, rclcpp::QoS(1).reliable()); // TODO: clarify OoS that should be used here.
   _poseStamped.header.frame_id	= _tfBaseFrameId;
   _tf.header.frame_id	= _tfBaseFrameId;
-  _tf.child_frame_id = _nameSpace + _tfChildFrameId;
+  _tf.child_frame_id = name_space + _tfChildFrameId;
   _reverseScan = false;
 
   //_odomAnalyzer = new OdometryAnalyzer(_grid);

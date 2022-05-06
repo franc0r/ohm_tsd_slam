@@ -35,15 +35,15 @@ OdometryAnalyzer::OdometryAnalyzer(obvious::TsdGrid& grid, const std::shared_ptr
   node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
   node->declare_parameter<std::string>("tf_child_frame", "laser");
 
-  //odom rescue
+  // odom rescue
   _waitForOdomTf = rclcpp::Duration::from_seconds(node->get_parameter("wait_for_odom_tf").as_double());
   _odomTfIsValid = false;
 
-  //Maximum allowed offset between two aligned scans
+  // Maximum allowed offset between two aligned scans
   _trnsMax = node->get_parameter("reg_trs_max").as_double();
   _rotMax = node->get_parameter("reg_sin_rot_max").as_double();
 
-  //Maximum robot speed at footprint frame
+  // Maximum robot speed at footprint frame
   _rotVelocityMax = node->get_parameter("max_velocity_rot").as_double();
   _trnsVelocityMax = node->get_parameter("max_velocity_lin").as_double();
 
@@ -135,7 +135,7 @@ void OdometryAnalyzer::odomRescueUpdate()
 
   std::cout << __PRETTY_FUNCTION__ << "_odomTfIsValid = " << _odomTfIsValid << std::endl;
 
- obvious::Matrix tfRelativeMatrix = tfToObviouslyMatrix3x3(_tfRelativeOdom);
+  obvious::Matrix tfRelativeMatrix = tfToObviouslyMatrix3x3(_tfRelativeOdom);
 
   std::cout << __PRETTY_FUNCTION__ << "odom(t-1) - odom(t) = tfRelativeOdom = \n " << std::endl;
   tfRelativeMatrix.print();

@@ -91,7 +91,7 @@ public:
    * @param yOffset Origin y position
    */
   ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, const std::shared_ptr<rclcpp::Node>& node,
-                 std::string nameSpace, const double xOffset, const double yOffset);
+                 const std::string& robot_name, const double xOffset, const double yOffset);
 
   /**
    * Destructor
@@ -253,6 +253,7 @@ private:
   /**
    * namespace for all topics and services
    */
+  std::string _robotName;
   std::string _nameSpace;
   /**
    * Laser time stamp now
