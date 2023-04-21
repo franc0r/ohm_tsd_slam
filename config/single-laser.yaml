@@ -1,4 +1,4 @@
-/tsd_slam:
+/**:
   ros__parameters:
     cellsize: 0.025
     epsThresh: 0.15
@@ -13,19 +13,7 @@
     occ_grid_time_interval: 2.0
     percentagePointsInC: 0.6
     pub_tsd_color_map: true
-    qos_overrides:
-      /parameter_events:
-        publisher:
-          depth: 1000
-          durability: volatile
-          history: keep_last
-          reliability: reliable
-      /tf:
-        publisher:
-          depth: 100
-          durability: volatile
-          history: keep_last
-          reliability: reliable
+
     rangemax: 30.0
     reg_sin_rot_max: 0.5
     reg_trs_max: 1.0
@@ -37,13 +25,13 @@
     dist_filter_min: 0.02
     icp_iterations: 30
     ransac_phi_max: 45.0
-    registration_mode: 0
-    tf_child_frame: default_ns/laser
+    registration_mode: 3
     ransac_ctrlset_size: 180
     ransac_eps_thresh: 0.15
     ransac_trials: 50
-    tf_base_frame: map
-    tf_footprint_frame: base_footprint
+    tf_laser_frame: laser
+    tf_map_frame: map
+    tf_odom_frame: odom
     trials: 100
     truncation_radius: 3
     ude_odom_rescue: false

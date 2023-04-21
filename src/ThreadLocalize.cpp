@@ -39,8 +39,8 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
 		_initialized(false),
 		_gridWidth(grid->getCellsX() * grid->getCellSize()),
 		_gridHeight(grid->getCellsY() * grid->getCellSize()),
-		_gridOffSetX(-1.0 * (grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)),
-		_gridOffSetY(-1.0 * (grid->getCellsY() * grid->getCellSize() * 0.5 + yOffset)),
+		_gridOffSetX(-(grid->getCellsX() * grid->getCellSize() * 0.5 + xOffset)),
+		_gridOffSetY(-(grid->getCellsY() * grid->getCellSize() * 0.5 + yOffset)),
 		_xOffset(xOffset),
 		_yOffset(yOffset),
 		_robotName(robot_name),
@@ -87,10 +87,12 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _node->declare_parameter<double>(_robotName + "dist_filter_min", DIST_FILT_MIN);
   _node->declare_parameter<int>(_robotName + "icp_iterations", ICP_ITERATIONS);
 
-  _node->declare_parameter<std::string>(_robotName + "tf_child_frame", _robotName + "laser");
+  _node->declare_parameter<std::string>(_robotName + "tf_laser_frame", _robotName + "laser");
+  _node->declare_parameter<std::string>(_robotName + "tf_odom_frame", _robotName + "odom");
 
   try {
-    _node->declare_parameter<std::string>("tf_footprint_frame", "base_footprint");
+    // Only declare if not declared yet.
+    // _node->declare_parameter<std::string>("tf_map_frame", "map")
 
     _node->declare_parameter<double>("reg_trs_max", TRNS_THRESH);
     _node->declare_parameter<double>("reg_sin_rot_max", ROT_THRESH);
@@ -130,9 +132,9 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   distFilterMin = _node->get_parameter(_robotName + "dist_filter_min").as_double();
   icpIterations = _node->get_parameter(_robotName + "icp_iterations").as_int();
   
-  _tfBaseFrameId = _node->get_parameter("tf_base_frame").as_string();
-  _tfChildFrameId = _node->get_parameter(_robotName + "tf_child_frame").as_string();
-  _tfFootprintFrameId = _node->get_parameter("tf_footprint_frame").as_string();
+  _tfLaserFrameId = _node->get_parameter(_robotName + "tf_laser_frame").as_string();
+  _tfMapFrameId = _node->get_parameter("tf_map_frame").as_string();
+  _tfOdomFrameId = _node->get_parameter(_robotName + "tf_odom_frame").as_string();
 
   _trnsMax = _node->get_parameter("reg_trs_max").as_double();
   _rotMax = _node->get_parameter("reg_sin_rot_max").as_double();
@@ -219,9 +221,9 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _icp->setConvergenceCounter(icpIterations);
 
   _posePub = _node->create_publisher<geometry_msgs::msg::PoseStamped>(poseTopic, rclcpp::QoS(1).reliable()); // TODO: clarify OoS that should be used here.
-  _poseStamped.header.frame_id	= _tfBaseFrameId;
-  _tf.header.frame_id	= _tfBaseFrameId;
-  _tf.child_frame_id = name_space + _tfChildFrameId;
+  _poseStamped.header.frame_id	= _tfMapFrameId;
+  _tf.header.frame_id	= _tfMapFrameId;
+  _tf.child_frame_id = _robotName + _tfOdomFrameId;
   _reverseScan = false;
 
   //_odomAnalyzer = new OdometryAnalyzer(_grid);
@@ -612,7 +614,7 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   _poseStamped.pose.position.z	= 0.0;
 
   tf2::Quaternion quat;
-  quat.setEuler(curTheta, 0.0, 0.0);
+  quat.setEuler(0.0, 0.0, curTheta);
   _poseStamped.pose.orientation.w	= quat.w();
   _poseStamped.pose.orientation.x	= quat.x();
   _poseStamped.pose.orientation.y	= quat.y();

@@ -30,12 +30,12 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   _occGrid->info.resolution           = static_cast<double>(_grid.getCellSize());
   _occGrid->info.width                = _grid.getCellsX();
   _occGrid->info.height               = _grid.getCellsY();
-  _occGrid->info.origin.orientation.w = 0.0;
+  _occGrid->info.origin.orientation.w = 1.0;
   _occGrid->info.origin.orientation.x = 0.0;
   _occGrid->info.origin.orientation.y = 0.0;
   _occGrid->info.origin.orientation.z = 0.0;
-  _occGrid->info.origin.position.x    = 0.0 - (static_cast<double>(_grid.getCellsX()) * static_cast<double>(_grid.getCellSize()) * 0.5 + xOffset);
-  _occGrid->info.origin.position.y    = 0.0 - (static_cast<double>(_grid.getCellsY()) * static_cast<double>(_grid.getCellSize()) * 0.5 + yOffset);
+  _occGrid->info.origin.position.x    = -(static_cast<double>(_grid.getCellsX()) * static_cast<double>(_grid.getCellSize()) * 0.5 + xOffset);
+  _occGrid->info.origin.position.y    = -(static_cast<double>(_grid.getCellsY()) * static_cast<double>(_grid.getCellSize()) * 0.5 + yOffset);
   _occGrid->info.origin.position.z    = 0.0;
   _occGrid->data.resize(_grid.getCellsX() * _grid.getCellsY());
 
@@ -46,7 +46,7 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   node->declare_parameter<int>("object_inflation_factor", 2);
   node->declare_parameter<bool>("use_object_inflation", false);
 
-  _occGrid->header.frame_id = node->get_parameter("tf_base_frame").as_string();
+  _occGrid->header.frame_id = node->get_parameter("tf_map_frame").as_string();
 
   _objectInflation = node->get_parameter("use_object_inflation").as_bool(); //toDo: exchange with if inflation > 0
   _objInflateFactor = static_cast<unsigned int>(node->get_parameter("object_inflation_factor").as_int());

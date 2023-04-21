@@ -55,7 +55,7 @@ void SlamNode::initialize()
   declare_parameter<int>("truncation_radius", 3);
   declare_parameter<double>("occ_grid_time_interval", 2.0);
   // declare_parameter<std::string>("topic_service_start_stop", "start_stop_slam");
-  declare_parameter<std::string>("tf_base_frame", "map");
+  declare_parameter<std::string>("tf_map_frame", "map");
 
   iVar = get_parameter("map_size").as_int();
   octaveFactor = static_cast<unsigned int>(iVar);
@@ -76,10 +76,10 @@ void SlamNode::initialize()
   //instanciate representation
   _grid = new obvious::TsdGrid(cellSize, obvious::LAYOUT_32x32, static_cast<obvious::EnumTsdGridLayout>(octaveFactor));  //obvious::LAYOUT_8192x8192
   _grid->setMaxTruncation(truncationRadius * cellSize);
-  unsigned int cellsPerSide = pow(2, octaveFactor);
-  double sideLength = static_cast<double>(cellsPerSide) * cellSize;
-  RCLCPP_INFO_STREAM(get_logger(), "Creating representation with " << cellsPerSide << "x" << cellsPerSide << "cells, representating " <<
-                     sideLength << "x" << sideLength << "m^2");
+  // unsigned int cellsPerSide = pow(2, octaveFactor);
+  // double sideLength = static_cast<double>(cellsPerSide) * cellSize;
+  RCLCPP_INFO_STREAM(get_logger(), "Creating representation with " << _grid->getCellsX() << "x" << _grid->getCellsY() << "cells, representating " <<
+                     _grid->getCellsX() * _grid->getCellSize() << "x" << _grid->getCellsY() * _grid->getCellSize() << "m^2");
 
   //instanciate mapping threads
   _threadMapping = new ThreadMapping(_grid);

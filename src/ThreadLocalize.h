@@ -418,11 +418,11 @@ private:
   /**
    * ROS tf frame ids
    */
-  std::string _tfBaseFrameId;
+  std::string _tfLaserFrameId;
   /**
    * ROS tf frame ids
    */
-  std::string _tfChildFrameId;
+  std::string _tfMapFrameId;
   /**
    * ROS tf frame ids
    */
@@ -430,7 +430,7 @@ private:
   /**
    * ROS tf frame ids
    */
-  std::string _tfFootprintFrameId;
+  // std::string _tfFootprintFrameId;
   /**
    * use odom rescue flag
    */
