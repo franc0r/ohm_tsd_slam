@@ -89,6 +89,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
 
   _node->declare_parameter<std::string>(_robotName + "tf_laser_frame", _robotName + "laser");
   _node->declare_parameter<std::string>(_robotName + "tf_odom_frame", _robotName + "odom");
+  _node->declare_parameter<std::string>(_robotName + "tf_footprint_frame", _robotName + "base_footprint");
 
   try {
     // Only declare if not declared yet.
@@ -135,6 +136,7 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
   _tfLaserFrameId = _node->get_parameter(_robotName + "tf_laser_frame").as_string();
   _tfMapFrameId = _node->get_parameter("tf_map_frame").as_string();
   _tfOdomFrameId = _node->get_parameter(_robotName + "tf_odom_frame").as_string();
+  _tfFootprintFrameId = _node->get_parameter(_robotName + "tf_footprint_frame").as_string();
 
   _trnsMax = _node->get_parameter("reg_trs_max").as_double();
   _rotMax = _node->get_parameter("reg_sin_rot_max").as_double();
@@ -193,6 +195,8 @@ ThreadLocalize::ThreadLocalize(obvious::TsdGrid* grid, ThreadMapping* mapper, co
 
   //_odomAnalyzer 		= NULL;			///todo nullptr? unten auch?
   _tfBroadcaster    = std::make_unique<tf2_ros::TransformBroadcaster>(*_node);
+  _tf_buffer = std::make_unique<tf2_ros::Buffer>(_node->get_clock());
+  _tf_transform_listener = std::make_unique<tf2_ros::TransformListener>(*_tf_buffer);
   _waitForOdomTf 		= rclcpp::Duration::from_seconds(durationWaitForOdom);
   _odomTfIsValid 		= false;
   _regMode 				  = static_cast<EnumRegModes>(iVar);
@@ -595,17 +599,65 @@ bool ThreadLocalize::isRegistrationError(obvious::Matrix* T, const double trnsMa
   return (trnsAbs > trnsMax) || (std::abs(std::sin(deltaPhi)) > rotMax);
 }
 
+// static tf
+
 void ThreadLocalize::sendTransform(obvious::Matrix* T)
 {
-//  obvious::Matrix Tbla(3, 3);
-//    Tbla = this->tfToObviouslyMatrix3x3(_tfFrameSensorMount);
-//    *T = Tbla * *T;
-
   const double curTheta		= this->calcAngle(T);
   const double posX			= (*T)(0, 2) + _gridOffSetX;
   const double posY			= (*T)(1, 2) + _gridOffSetY;
 
+  tf2::Quaternion orientation;
+  orientation.setEuler(0.0, 0.0, curTheta);
+  tf2::Transform pose;
+  pose.setOrigin(tf2::Vector3(posX, posY, 0.0));
+  pose.setRotation(orientation);
 
+  // Correction of laser to base_footprint.
+  try {
+    geometry_msgs::msg::TransformStamped tf_transform = _tf_buffer->lookupTransform(
+      _tfLaserFrameId, _tfFootprintFrameId, tf2::TimePointZero
+    );
+    
+    // Transform is available. Add to pose the transformation between laser and base_footprint.
+    tf2::Transform t_laser_to_base_link;
+    tf2::fromMsg(tf_transform.transform, t_laser_to_base_link);
+    tf2::Transform t_map_base_link;
+    // t_map_base_link.mult(pose, t_laser_to_base_link.inverse());
+    t_map_base_link.mult(pose, t_laser_to_base_link);    
+    pose = t_map_base_link;    
+    _tf.child_frame_id = _tfFootprintFrameId;
+    _tf.header.frame_id = _tfMapFrameId;
+  }
+  catch (const tf2::TransformException & ex) {
+    // No transform available. Skip transforming into base_footprint.
+    RCLCPP_INFO(_node->get_logger(), "No transfrom from laser to footprint available.");
+    RCLCPP_INFO(_node->get_logger(), "Exception = %s", ex.what());
+    _tf.child_frame_id = _tfLaserFrameId;
+    // return;
+  }
+
+  // Correction of odom.
+  try {
+    geometry_msgs::msg::TransformStamped tf_transform = _tf_buffer->lookupTransform(
+      _tfFootprintFrameId, _tfOdomFrameId, tf2::TimePointZero
+    );
+
+    // Transform is available. Coorect odom frame by publishing map --> odom.
+    tf2::Transform t_base_link_to_odom;
+    tf2::fromMsg(tf_transform.transform, t_base_link_to_odom);
+    tf2::Transform t_map_odom;
+    t_map_odom.mult(pose, t_base_link_to_odom);
+    pose = t_map_odom;
+    _tf.child_frame_id = _tfOdomFrameId;
+    _tf.header.frame_id = _tfMapFrameId;
+  }
+  catch (const tf2::TransformException & ex) {
+    // No transform available. Skip transforming into base_footprint.
+    RCLCPP_INFO(_node->get_logger(), "No transfrom from footprint to odom available.");
+    RCLCPP_INFO(_node->get_logger(), "Exception = %s", ex.what());
+    // return;
+  }
 
   //_poseStamped.header.stamp = ros::Time::now();
   _poseStamped.header.stamp		= _stampLaser;
@@ -621,11 +673,12 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   _poseStamped.pose.orientation.z	= quat.z();
   //  _tf.stamp_ = ros::Time::now();
 
-  tf2::Transform transfrom;
-  transfrom.setRotation(quat);
-  transfrom.setOrigin(tf2::Vector3(posX, posY, 0.0));
+  // tf2::Transform transfrom;
+  // transfrom.setRotation(quat);
+  // transfrom.setOrigin(tf2::Vector3(posX, posY, 0.0));
   _tf.header.stamp = _stampLaser;
-  _tf.transform = tf2::toMsg(transfrom);
+  // _tf.header.stamp = _node->get_clock()->now();
+  _tf.transform = tf2::toMsg(pose);
 
   _posePub->publish(_poseStamped);
   _tfBroadcaster->sendTransform(_tf);

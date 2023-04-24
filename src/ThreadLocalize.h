@@ -400,8 +400,8 @@ private:
   /**
    * ROS tf interface - listener
    */
-  std::unique_ptr<tf2_ros::TransformListener> transform_listener_;
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::unique_ptr<tf2_ros::TransformListener> _tf_transform_listener;
+  std::unique_ptr<tf2_ros::Buffer> _tf_buffer;
   /**
    * Containre for reading tfs
    */
@@ -430,7 +430,7 @@ private:
   /**
    * ROS tf frame ids
    */
-  // std::string _tfFootprintFrameId;
+  std::string _tfFootprintFrameId;
   /**
    * use odom rescue flag
    */

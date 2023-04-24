@@ -10,22 +10,46 @@ def generate_launch_description():
         'single-laser.yaml'
         )
 
+    tf_laser_footprint = Node(
+      package='tf2_ros',
+      executable='static_transform_publisher',
+      arguments=[
+        '0.17', '0', '0', '1.570796327', '0', '0',
+        'base_footprint',
+        'laser'
+      ]
+    )
+    tf_footprint_odom = Node(
+      package='tf2_ros',
+      executable='static_transform_publisher',
+      arguments=[
+        '1', '2', '0', '0', '0', '0',
+        'odom',
+        'base_footprint'
+      ]
+    )
+
+    slam = Node(
+      package='ohm_tsd_slam',
+      executable='slam_node',
+      name='tsd_slam',
+      remappings=[
+        # Subscriptions
+        ('/tsd_slam/laser', 'scan'),
+        # Publisher
+        ('/tsd_slam/map', 'tsd_slam/map'),
+        ('/tsd_slam/estimated_pose', 'tsd_slam/estimated_pose'),
+        ('/tsd_slam/map/image', 'tsd_slam/map/image'),
+        # Services
+        ('/tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
+        ('/tsd_slam/get_map', 'tsd_slam/get_map')
+      ],
+      parameters=[config],
+      output='screen'
+    )
+
     return LaunchDescription([
-        Node(
-            package='ohm_tsd_slam',
-            executable='slam_node',
-            name='tsd_slam',
-            remappings=[
-                # Subscriptions
-                ('/tsd_slam/laser', 'scan'),
-                # Publisher
-                ('/tsd_slam/map', 'tsd_slam/map'),
-                ('/tsd_slam/estimated_pose', 'tsd_slam/estimated_pose'),
-                ('/tsd_slam/map/image', 'tsd_slam/map/image'),
-                # Services
-                ('/tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
-                ('/tsd_slam/get_map', 'tsd_slam/get_map')
-            ],
-            parameters=[config],
-        )
+    #   tf_laser_footprint,
+    #   tf_footprint_odom,
+      slam
     ])
