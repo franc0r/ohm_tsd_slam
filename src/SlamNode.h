@@ -60,7 +60,7 @@ struct TaggedSubscriber
   {
     _subs = _node->create_subscription<sensor_msgs::msg::LaserScan>(
       _topic,
-      rclcpp::QoS(3).reliable(), 
+      rclcpp::QoS(2).best_effort(), 
       std::bind(&ThreadLocalize::laserCallBack, _localizer, std::placeholders::_1)
     );
   }

@@ -34,7 +34,7 @@
 #include <obvision/registration/ransacMatching/PDFMatching.h>
 #include <obvision/registration/ransacMatching/TSD_PDFMatching.h>
 
-#include <obgraphic/Obvious2D.h> //debugging tsd_pdf
+// #include <obgraphic/Obvious2D.h> //debugging tsd_pdf
 #include <obcore/base/tools.h> //debugging tsd_pdf
 #include <iostream> //debugging tsd_pdf
 #include <fstream> //debugging tsd_pdf
