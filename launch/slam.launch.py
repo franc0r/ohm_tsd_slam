@@ -25,28 +25,28 @@ def generate_launch_description():
             ('/tsd_slam/start_stop_slam', 'tsd_slam/start_stop_slam'),
             ('/tsd_slam/get_map', 'tsd_slam/get_map')
         ],
-        parameters=[config],
-        prefix=['gdbserver localhost:3000']
+        parameters=[config]
+        # prefix=['gdbserver localhost:3000']
     )
 
     tf_laser_footprint = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
       arguments=[
-        '0.17', '0.04', '0.05', '0', '0', '0',
-        'laser',
-        'base_footprint'
+        '0.17', '0', '0', '1.570796327', '0', '0',
+        'base_footprint',
+        'laser'
       ]
-    )  
+    )
     tf_footprint_odom = Node(
       package='tf2_ros',
       executable='static_transform_publisher',
       arguments=[
-        '1', '2', '0', '1', '0', '0',
-        'laser',
+        '1', '2', '0', '0', '0', '0',
+        'odom',
         'base_footprint'
       ]
-    )        
+    )     
 
     return LaunchDescription([
         # tf_laser_footprint,
