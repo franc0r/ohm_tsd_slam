@@ -4,7 +4,7 @@
     epsThresh: 0.15
     lamshort: 0.08
     laser_min_range: 0.26
-    map_size: 11
+    map_size: 10
     maxAngleDiff: 1.5
     maxAnglePenalty: 0.5
     max_velocity_lin: 1.0
