@@ -33,7 +33,7 @@ def generate_launch_description():
       package='tf2_ros',
       executable='static_transform_publisher',
       arguments=[
-        '0.17', '0', '0', '1.570796327', '0', '0',
+        '0.3', '0', '0', '1.570796327', '0', '0',
         'base_footprint',
         'laser'
       ]
@@ -42,7 +42,7 @@ def generate_launch_description():
       package='tf2_ros',
       executable='static_transform_publisher',
       arguments=[
-        '1', '2', '0', '0', '0', '0',
+        '1', '2', '0', '1', '0', '0',
         'odom',
         'base_footprint'
       ]

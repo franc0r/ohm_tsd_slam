@@ -612,6 +612,8 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   tf2::Transform pose;
   pose.setOrigin(tf2::Vector3(posX, posY, 0.0));
   pose.setRotation(orientation);
+  _tf.child_frame_id = _tfOdomFrameId;
+  _tf.header.frame_id = _tfMapFrameId;
 
   // Correction of laser to base_footprint.
   try {
@@ -626,14 +628,15 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
     // t_map_base_link.mult(pose, t_laser_to_base_link.inverse());
     t_map_base_link.mult(pose, t_laser_to_base_link);    
     pose = t_map_base_link;    
-    _tf.child_frame_id = _tfFootprintFrameId;
-    _tf.header.frame_id = _tfMapFrameId;
+    // _tf.child_frame_id = _tfFootprintFrameId;
+    // _tf.header.frame_id = _tfMapFrameId;
   }
   catch (const tf2::TransformException & ex) {
     // No transform available. Skip transforming into base_footprint.
     RCLCPP_INFO(_node->get_logger(), "No transfrom from laser to footprint available.");
     RCLCPP_INFO(_node->get_logger(), "Exception = %s", ex.what());
-    _tf.child_frame_id = _tfLaserFrameId;
+
+    // _tf.child_frame_id = _tfLaserFrameId;
     // return;
   }
 
@@ -651,6 +654,7 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
     pose = t_map_odom;
     _tf.child_frame_id = _tfOdomFrameId;
     _tf.header.frame_id = _tfMapFrameId;
+    _tf.transform = tf2::toMsg(pose);        
   }
   catch (const tf2::TransformException & ex) {
     // No transform available. Skip transforming into base_footprint.
@@ -678,7 +682,7 @@ void ThreadLocalize::sendTransform(obvious::Matrix* T)
   // transfrom.setOrigin(tf2::Vector3(posX, posY, 0.0));
   _tf.header.stamp = _stampLaser;
   // _tf.header.stamp = _node->get_clock()->now();
-  _tf.transform = tf2::toMsg(pose);
+
 
   _posePub->publish(_poseStamped);
   _tfBroadcaster->sendTransform(_tf);

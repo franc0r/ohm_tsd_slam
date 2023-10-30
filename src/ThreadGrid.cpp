@@ -52,7 +52,7 @@ ThreadGrid::ThreadGrid(obvious::TsdGrid* grid, const std::shared_ptr<rclcpp::Nod
   _objInflateFactor = static_cast<unsigned int>(node->get_parameter("object_inflation_factor").as_int());
 
   const std::string node_name = _node->get_name();
-  _gridPub = node->create_publisher<nav_msgs::msg::OccupancyGrid>(node_name + "/map", rclcpp::QoS(1).reliable());
+  _gridPub = node->create_publisher<nav_msgs::msg::OccupancyGrid>(node_name + "/map", rclcpp::QoS(1).reliable().transient_local());
   _pubColorImage = node->create_publisher<sensor_msgs::msg::Image>(node_name + "/map/image", rclcpp::QoS(1).best_effort());
 
   _getMapServ = node->create_service<nav_msgs::srv::GetMap>(
