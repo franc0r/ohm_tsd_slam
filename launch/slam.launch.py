@@ -49,7 +49,7 @@ def generate_launch_description():
     )     
 
     return LaunchDescription([
-        # tf_laser_footprint,
+        tf_laser_footprint,
         # tf_footprint_odom,
         slam_node
     ])
