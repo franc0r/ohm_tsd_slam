@@ -16,7 +16,7 @@ def generate_launch_description():
         name='tsd_slam',
         remappings=[
             # Subscriptions
-            ('/tsd_slam/laser', 'tsd_slam/laser'),
+            ('/tsd_slam/laser', '/scan'),
             # Publisher
             ('/tsd_slam/map', 'tsd_slam/map'),
             ('/tsd_slam/estimated_pose', 'tsd_slam/estimated_pose'),

@@ -61,7 +61,7 @@ RUN \
     && git clone --branch feature/ros2 https://github.com/franc0r/ohm_tsd_slam.git \
     && cd .. \
     && source /opt/ros/$ROS_DISTRO/setup.bash \
-    && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    && colcon build --symlink-install --event-handlers console_direct+ --cmake-args -DCMAKE_BUILD_TYPE=Release \
 ########################################################
 # Add line for sourcing ROS environment.
     && echo "export RMW_IMPLEMENTATION=rmw_fastrtps_cpp" >> /home/$USER/.bashrc \
@@ -73,6 +73,6 @@ RUN \
 WORKDIR /home/$USER
 
 CMD export RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
-    && export FASTRTPS_DEFAULT_PROFILES_FILE=/home/$USER/fastrtps_profile.xml \
-    && source /home/$USER/install/setup.bash \
+    # && export FASTRTPS_DEFAULT_PROFILES_FILE=/home/$USER/fastrtps_profile.xml \
+    && source /home/$USER/ros2/install/setup.bash \
     && ros2 launch ohm_tsd_slam slam.launch.py
