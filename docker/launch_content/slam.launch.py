@@ -33,8 +33,8 @@ def generate_launch_description():
       executable='static_transform_publisher',
       arguments=[
         '0.3', '0', '0', '1.570796327', '0', '0',
-        'base_footprint',
-        'laser'
+        'eduard/blue/base_footprint',
+        'eduard/blue/laser'
       ]
     )
     tf_footprint_odom = Node(

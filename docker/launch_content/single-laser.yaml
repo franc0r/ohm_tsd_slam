@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    cellsize: 0.025
+    cellsize: 0.04
     epsThresh: 0.15
     lamshort: 0.08
     laser_min_range: 0.26
@@ -29,9 +29,10 @@
     ransac_ctrlset_size: 180
     ransac_eps_thresh: 0.15
     ransac_trials: 50
-    tf_laser_frame: laser
+    tf_laser_frame: eduard/blue/laser
     tf_map_frame: map
-    tf_odom_frame: odom
+    tf_odom_frame: eduard/blue/odom
+    tf_footprint_frame: eduard/blue/base_footprint    
     trials: 100
     truncation_radius: 3
     ude_odom_rescue: false
